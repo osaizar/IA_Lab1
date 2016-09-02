@@ -150,7 +150,7 @@ class MyAgentProgram implements AgentProgram {
     	System.out.println("y=" + state.agent_y_position);
     	System.out.println("dir=" + state.agent_direction);
 		
-	    iterationCounter--;
+	    //iterationCounter--;
 	    
 	    if (iterationCounter==0)
 	    	return NoOpAction.NO_OP;
@@ -187,52 +187,48 @@ class MyAgentProgram implements AgentProgram {
 	    state.printWorldDebug();
 	    
 	    // Go to the start position
-
     	if (!startPoint) {
     		if (state.agent_direction != MyAgentState.EAST && !rightWall){
     			state.agent_last_action = state.ACTION_TURN_RIGHT;
     			state.agent_direction = ((state.agent_direction+1) % 4);
     			return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
     		}
-    		else if(!bump){
+    		
+    		if (!bump){
     			state.agent_last_action = state.ACTION_MOVE_FORWARD;
     			return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-    		}
-    		else{
-    			if(!rightWall) {
+    		}else{
+    			if (!rightWall) {
     				rightWall = true;
         			state.agent_last_action = state.ACTION_TURN_RIGHT;
         			state.agent_direction = ((state.agent_direction+1) % 4);
     				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+    			}else{
+    				startPoint = true;
     			}
-    			startPoint = true;
-    			state.agent_last_action = state.ACTION_NONE;
-    			return NoOpAction.NO_OP;
     		}
     	}
+
+    	// Clean
 	    
 	    
 	    // Next action selection based on the percept value
-	    if (home) {
-	    	System.out.println("HOME -> Shuting down");
-	    	return NoOpAction.NO_OP;
-	    }
-	    else if (dirt)
-	    {
+	    if (dirt){
 	    	System.out.println("DIRT -> choosing SUCK action!");
 	    	state.agent_last_action=state.ACTION_SUCK;
 	    	return LIUVacuumEnvironment.ACTION_SUCK;
-	    } 
-	    else
-	    {
-	    	if (bump)
-	    	{
-	    		state.agent_last_action=state.ACTION_NONE;
-	    		// Decidir el giro
-		    	return NoOpAction.NO_OP;
+	    }else{
+	    	if (home) {
+	    		System.out.println("HOME -> Shuting down");
+	    		state.agent_last_action = state.ACTION_NONE;
+	    		return NoOpAction.NO_OP;
+	    	}else if (bump){
+	    		//state.agent_last_action=state.ACTION_NONE;
+	    		state.agent_last_action = state.ACTION_TURN_RIGHT;
+	    		state.agent_direction = ((state.agent_direction+1) % 4);
+		    	return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
 	    	}
-	    	else
-	    	{
+	    	else{
 	    		state.agent_last_action=state.ACTION_MOVE_FORWARD;
 	    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 	    	}
