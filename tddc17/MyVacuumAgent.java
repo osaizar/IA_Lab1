@@ -23,17 +23,17 @@ class MyAgentState
 	final int ACTION_TURN_RIGHT 	= 2;
 	final int ACTION_TURN_LEFT 		= 3;
 	final int ACTION_SUCK	 		= 4;
-	
+
 	public int agent_x_position = 1;
 	public int agent_y_position = 1;
 	public int agent_last_action = ACTION_NONE;
-	
+
 	public static final int NORTH = 0;
 	public static final int EAST = 1;
 	public static final int SOUTH = 2;
 	public static final int WEST = 3;
 	public int agent_direction = EAST;
-	
+
 	MyAgentState()
 	{
 		for (int i=0; i < world.length; i++)
@@ -64,14 +64,14 @@ class MyAgentState
 				break;
 			}
 	    }
-		
+
 	}
-	
+
 	public void updateWorld(int x_position, int y_position, int info)
 	{
 		world[x_position][y_position] = info;
 	}
-	
+
 	public void printWorldDebug()
 	{
 		for (int i=0; i < world.length; i++)
@@ -96,15 +96,20 @@ class MyAgentState
 
 class MyAgentProgram implements AgentProgram {
 
-	private int initnialRandomActions = 10; //changed
+	private int initnialRandomActions = 10;  // Original value: 10
 	private Random random_generator = new Random();
-	
+
 	// Here you can define your variables!
-	public int iterationCounter = 100; //changed
+	public int iterationCounter = 100;  // Original value: 10
 	public MyAgentState state = new MyAgentState();
-	boolean startPoint = false;
+	// Added variables
+	boolean bottomRight = false;
 	boolean rightWall = false;
-	
+	boolean additionalRow = false;
+	boolean turning = false;
+	boolean evenRow = false;
+	boolean homeCheckpoint = false;
+
 	// moves the Agent to a random start position
 	// uses percepts to update the Agent position - only the position, other percepts are ignored
 	// returns a random action
@@ -114,7 +119,7 @@ class MyAgentProgram implements AgentProgram {
 		state.updatePosition(percept);
 		if(action==0) {
 		    state.agent_direction = ((state.agent_direction-1) % 4);
-		    if (state.agent_direction<0) 
+		    if (state.agent_direction<0)
 		    	state.agent_direction +=4;
 		    state.agent_last_action = state.ACTION_TURN_LEFT;
 			return LIUVacuumEnvironment.ACTION_TURN_LEFT;
@@ -122,15 +127,15 @@ class MyAgentProgram implements AgentProgram {
 			state.agent_direction = ((state.agent_direction+1) % 4);
 		    state.agent_last_action = state.ACTION_TURN_RIGHT;
 		    return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-		} 
+		}
 		state.agent_last_action=state.ACTION_MOVE_FORWARD;
 		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 	}
-	
-	
+
+
 	@Override
 	public Action execute(Percept percept) {
-		
+
 		// DO NOT REMOVE this if condition!!!
     	if (initnialRandomActions>0) {
     		return moveToRandomStartPosition((DynamicPercept) percept);
@@ -142,16 +147,16 @@ class MyAgentProgram implements AgentProgram {
 			state.agent_last_action=state.ACTION_SUCK;
 	    	return LIUVacuumEnvironment.ACTION_SUCK;
     	}
-		
+
     	// This example agent program will update the internal agent state while only moving forward.
     	// START HERE - code below should be modified!
-    	    	
+
     	System.out.println("x=" + state.agent_x_position);
     	System.out.println("y=" + state.agent_y_position);
     	System.out.println("dir=" + state.agent_direction);
-		
+
 	    //iterationCounter--;
-	    
+
 	    if (iterationCounter==0)
 	    	return NoOpAction.NO_OP;
 
@@ -160,7 +165,7 @@ class MyAgentProgram implements AgentProgram {
 	    Boolean dirt = (Boolean)p.getAttribute("dirt");
 	    Boolean home = (Boolean)p.getAttribute("home");
 	    System.out.println("percept: " + p);
-	    
+
 	    // State update based on the percept value and the last action
 	    state.updatePosition((DynamicPercept)percept);
 	    if (bump) {
@@ -183,53 +188,116 @@ class MyAgentProgram implements AgentProgram {
 	    	state.updateWorld(state.agent_x_position,state.agent_y_position,state.DIRT);
 	    else
 	    	state.updateWorld(state.agent_x_position,state.agent_y_position,state.CLEAR);
-	    
+
 	    state.printWorldDebug();
-	    
-	    // Go to the start position
-    	if (!startPoint) {
+
+	    // First of all, let's direct the vacuum cleaner to the bottom right corner
+    	if (!bottomRight) {
+
     		if (state.agent_direction != MyAgentState.EAST && !rightWall){
     			state.agent_last_action = state.ACTION_TURN_RIGHT;
     			state.agent_direction = ((state.agent_direction+1) % 4);
     			return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
     		}
-    		
-    		if (!bump){
+
+    		if (!bump) {
     			state.agent_last_action = state.ACTION_MOVE_FORWARD;
     			return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-    		}else{
+    		}
+			else {
     			if (!rightWall) {
+					// The cleaner has found the right wall, now should go to the bottom
     				rightWall = true;
         			state.agent_last_action = state.ACTION_TURN_RIGHT;
         			state.agent_direction = ((state.agent_direction+1) % 4);
     				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-    			}else{
-    				startPoint = true;
+    			}
+				else {
+    				bottomRight = true;
     			}
     		}
     	}
 
-    	// Clean
-	    
-	    
+    	// v1.0:
+		// Once we are on the bottom right corner, the cleaner runs
+		// by row or column by column.
+		// Conditions: No obstacles
+
+		// FIXME
+		// When facing the first wall of the route, the cleaner does NOT
+		// move forward after the first turn to the right (as it should)
+
+		// First we face west
+		if (state.agent_direction != MyAgentState.WEST && rightWall) {
+			state.agent_last_action = state.ACTION_TURN_RIGHT;
+			state.agent_direction = ((state.agent_direction+1) % 4);
+			return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+		}
+
+		// We check the size of the board
+		if (state.agent_y_position % 2 == 0 && rightWall) {  // rightWall - reutilized variable
+			additionalRow = true;
+			evenRow = true;
+			rightWall = false;  // This way we only add a row if we are on the bottom right corner
+		}
+
+		if (turning && state.agent_last_action == state.ACTION_MOVE_FORWARD) {
+			turning = false;
+			if (evenRow) {
+				evenRow = false;
+				state.agent_last_action = state.ACTION_TURN_LEFT;
+				state.agent_direction = ((state.agent_direction - 1) % 4);
+				return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+			}
+			else {
+				evenRow = true;
+				state.agent_last_action = state.ACTION_TURN_RIGHT;
+				state.agent_direction = ((state.agent_direction + 1) % 4);
+				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+			}
+		}
+
 	    // Next action selection based on the percept value
-	    if (dirt){
+	    if (dirt) {
 	    	System.out.println("DIRT -> choosing SUCK action!");
-	    	state.agent_last_action=state.ACTION_SUCK;
+	    	state.agent_last_action = state.ACTION_SUCK;
 	    	return LIUVacuumEnvironment.ACTION_SUCK;
-	    }else{
-	    	if (home) {
+	    }
+		else {
+			if (home && additionalRow) {
+				homeCheckpoint = true;
+				state.agent_last_action = state.ACTION_TURN_RIGHT;
+				state.agent_direction = ((state.agent_direction + 1) % 4);
+				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+			}
+	    	else if (home) {
 	    		System.out.println("HOME -> Shuting down");
 	    		state.agent_last_action = state.ACTION_NONE;
 	    		return NoOpAction.NO_OP;
-	    	}else if (bump){
-	    		//state.agent_last_action=state.ACTION_NONE;
-	    		state.agent_last_action = state.ACTION_TURN_RIGHT;
-	    		state.agent_direction = ((state.agent_direction+1) % 4);
-		    	return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
 	    	}
-	    	else{
-	    		state.agent_last_action=state.ACTION_MOVE_FORWARD;
+			else if (bump) {
+				turning = true;
+				if (evenRow) {
+					state.agent_last_action = state.ACTION_TURN_LEFT;
+					state.agent_direction = ((state.agent_direction - 1) % 4);
+			    	return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+				}
+				else {
+	    			state.agent_last_action = state.ACTION_TURN_RIGHT;
+	    			state.agent_direction = ((state.agent_direction + 1) % 4);
+		    		return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+				}
+	    	}
+			// To complete the final 180 degrees turning
+			else if (homeCheckpoint && state.agent_last_action == state.ACTION_TURN_LEFT) {
+				homeCheckpoint = false;
+				additionalRow = false;
+				state.agent_last_action = state.ACTION_TURN_LEFT;
+				state.agent_direction = ((state.agent_direction - 1) % 4);
+				return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+			}
+	    	else {
+	    		state.agent_last_action = state.ACTION_MOVE_FORWARD;
 	    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 	    	}
 	    }
