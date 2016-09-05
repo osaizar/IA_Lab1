@@ -140,13 +140,13 @@ class MyAgentProgram implements AgentProgram {
     	if (initnialRandomActions>0) {
     		return moveToRandomStartPosition((DynamicPercept) percept);
     	} else if (initnialRandomActions==0) {
-    		// process percept for the last step of the initial random actions
+				// process percept for the last step of the initial random actions
     		initnialRandomActions--;
     		state.updatePosition((DynamicPercept) percept);
 			System.out.println("Processing percepts after the last execution of moveToRandomStartPosition()");
 			state.agent_last_action=state.ACTION_SUCK;
 	    	return LIUVacuumEnvironment.ACTION_SUCK;
-    	}
+			}
 
     	// This example agent program will update the internal agent state while only moving forward.
     	// START HERE - code below should be modified!
@@ -228,11 +228,12 @@ class MyAgentProgram implements AgentProgram {
 		/// First we face west
 		if (state.agent_direction != MyAgentState.WEST && rightWall) {
 			rightWall = false;
-
+			System.out.println("Checking for additionalRow...");
 			if (state.agent_y_position % 2 == 0 ){
+				System.out.println("true");
 				additionalRow = true;
 				evenRow = true;
-			}
+			}else System.out.println("false");
 
 			state.agent_last_action = state.ACTION_TURN_RIGHT;
 			state.agent_direction = ((state.agent_direction+1) % 4);
@@ -241,7 +242,7 @@ class MyAgentProgram implements AgentProgram {
 
 		if (turning && state.agent_last_action == state.ACTION_MOVE_FORWARD) {
 			turning = false;
-			if (evenRow) {
+			if (evenRow != additionalRow) {
 				evenRow = false;
 				state.agent_last_action = state.ACTION_TURN_LEFT;
 				state.agent_direction = ((state.agent_direction-1) % 4);
@@ -278,7 +279,7 @@ class MyAgentProgram implements AgentProgram {
 		else if (bump) {
 			turning = true;
 			System.out.println("BUMP! -> entering turning mode");
-			if (evenRow) {
+			if (evenRow != additionalRow) { //test
 				System.out.println("Turning mode -> evenRow"); //debug
 				state.agent_last_action = state.ACTION_TURN_LEFT;
 				state.agent_direction = ((state.agent_direction-1) % 4);
