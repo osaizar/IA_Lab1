@@ -119,8 +119,8 @@
 				next = world[agent_x_position-1][agent_y_position];
 			if(agent_direction == MyAgentState.SOUTH)
 				next = world[agent_x_position][agent_y_position+1];
-			
-			if(next == UNKNOWN)
+
+			if(next != UNKNOWN)
 				return true;
 			else
 				return false;
@@ -142,7 +142,7 @@
 
 	class MyAgentProgram implements AgentProgram {
 
-		private int initnialRandomActions = 0;  // Original value: 10
+		private int initnialRandomActions = 10;  // Original value: 10
 		private Random random_generator = new Random();
 
 		// Here you can define your variables!
@@ -153,7 +153,6 @@
 		private Stack movementHistory = new Stack();
 		private boolean backtracking = false;
 		private boolean faceBack = false;
-		private boolean turn = false;
 		private int steps = -1; //no steps pending
 
 		// moves the Agent to a random start position
@@ -237,7 +236,6 @@
 
 		    state.printWorldDebug();
 
-
 		   // v2.0:
 		   // Conditions: Obstacles
 		    if (dirt) {
@@ -245,22 +243,24 @@
 		    	state.agent_last_action = state.ACTION_SUCK;
 		    	return LIUVacuumEnvironment.ACTION_SUCK;
 		  	}
-		  	else if(turn){
-		  		if(steps > 0){
-		  			steps--;
-		  			state.doAction(state.ACTION_TURN_RIGHT);
-		  			if(!backtracking)movementHistory.push(state.ACTION_TURN_RIGHT);
-		  			return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-		  		}else{
-		  			turn = false;
-		  			steps = -1;
-		  		}
-		  	}
 		  	else if(backtracking){
+		  		if(faceBack){ //do left left
+		  			if(steps == -1)
+		  				steps = 2;
+		  			if(steps != 0){
+		  				steps--;
+		  				state.doAction(state.ACTION_TURN_LEFT);
+		  				return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+		  			}
+		  			else{
+		  				steps = -1;
+		  				faceBack = false;
+		  			}
+		  		}
 		    	if(state.getUnknownWorld() != -1)
 		    		backtracking = false;
 		    	else{
-		    			int action = (Integer) movementHistory.pop();
+		    			int action = (Integer) movementHistory.pop(); //not true, we have to find a way to invert the movement
 		    			if(action == state.ACTION_TURN_LEFT){
 		    				state.doAction(state.ACTION_TURN_RIGHT);
 		    				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
@@ -274,37 +274,26 @@
 		    		}
 		    	} 
 		  	else if(bump || !state.checkNextStep()){ //zerbait jo deu edo hurrengo posizioa ezaguna da // debug
-		  		System.out.println("Path change needed bump["+bump+"] next step ["+state.checkNextStep()+"]");
 		    	if(state.getUnknownWorld() != -1){
-		    		System.out.println("Finding new Path...");
-		    		turn = true;
-		    		int path = state.getUnknownWorld();
-		    		steps = path - state.agent_direction;
-		    		if(steps < 0)
-		    			steps = 4 + steps;
-		    		System.out.println("Path: "+path+" steps: "+steps+" (rigth)");
+		    		//face uknown world
 		    	}else{
-		    		System.out.println("Starting backtrack...");
 		    		backtracking = true;
-		    		turn = true; //to do a 180 spin
-		    		steps = 1;
-		    		state.doAction(state.ACTION_TURN_RIGHT);
-		  			return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+		    		faceBack = true; //to do a 180 spin
+		    		state.agent_last_action = state.ACTION_NONE;
+		    		return NoOpAction.NO_OP;
 		    	}
 		    }
-		  	else{
+		    else{
 		    	movementHistory.push(state.ACTION_MOVE_FORWARD);
-		    	state.doAction(state.ACTION_MOVE_FORWARD);
+		    	state.agent_last_action = state.ACTION_MOVE_FORWARD;
 		    	return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 		    }
-		    movementHistory.push(state.ACTION_MOVE_FORWARD);
-		    state.doAction(state.ACTION_MOVE_FORWARD);
-		    return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;	
+		    return null; 	
 		  }
 		}
 
-	public class RandomVacuumAgent extends AbstractAgent {
-	    public RandomVacuumAgent() {
+	public class MyVacuumAgentObstacle extends AbstractAgent {
+	    public MyVacuumAgentObstacle() {
 	    	super(new MyAgentProgram());
 		}
 	}

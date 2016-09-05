@@ -249,7 +249,7 @@
 					return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 				}
 				else if(state.agent_last_action != state.ACTION_MOVE_FORWARD){
-					evenRow = !evenRow;
+					evenRow = !evenRow; 
 					System.out.println("Starting turning movement");
 					state.agent_last_action = state.ACTION_MOVE_FORWARD;
 		    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
