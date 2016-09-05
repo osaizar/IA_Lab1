@@ -100,15 +100,15 @@ class MyAgentProgram implements AgentProgram {
 	private Random random_generator = new Random();
 
 	// Here you can define your variables!
-	public int iterationCounter = 100;  // Original value: 10
+	public int iterationCounter = 1000;  // Original value: 10
 	public MyAgentState state = new MyAgentState();
 	// Added variables
-	boolean bottomRight = false;
-	boolean rightWall = false;
-	boolean additionalRow = false;
-	boolean turning = false;
-	boolean evenRow = false;
-	boolean homeCheckpoint = false;
+	private boolean bottomRight = false;
+	private boolean rightWall = false;
+	private boolean additionalRow = false;
+	private boolean turning = false;
+	private boolean evenRow = false;
+	private boolean homeCheckpoint = false;
 
 	// moves the Agent to a random start position
 	// uses percepts to update the Agent position - only the position, other percepts are ignored
@@ -205,7 +205,7 @@ class MyAgentProgram implements AgentProgram {
     			return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
     		}else {
     			if (!rightWall) {
-					// The cleaner has found the right wall, now should go to the bottom
+							// The cleaner has found the right wall, now should go to the bottom
     					rightWall = true;
         			state.agent_last_action = state.ACTION_TURN_RIGHT;
         			state.agent_direction = ((state.agent_direction+1) % 4);
@@ -244,7 +244,9 @@ class MyAgentProgram implements AgentProgram {
 			if (evenRow) {
 				evenRow = false;
 				state.agent_last_action = state.ACTION_TURN_LEFT;
-				state.agent_direction = ((state.agent_direction - 1) % 4);
+				state.agent_direction = ((state.agent_direction-1) % 4);
+		    if (state.agent_direction<0)
+		    	state.agent_direction +=4;
 				return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 			}
 			else {
@@ -279,7 +281,9 @@ class MyAgentProgram implements AgentProgram {
 			if (evenRow) {
 				System.out.println("Turning mode -> evenRow"); //debug
 				state.agent_last_action = state.ACTION_TURN_LEFT;
-				state.agent_direction = ((state.agent_direction - 1) % 4);
+				state.agent_direction = ((state.agent_direction-1) % 4);
+		    if (state.agent_direction<0)
+		    	state.agent_direction +=4;
 			    return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 			}
 			else {
@@ -295,7 +299,9 @@ class MyAgentProgram implements AgentProgram {
 			homeCheckpoint = false;
 			additionalRow = false;
 			state.agent_last_action = state.ACTION_TURN_LEFT;
-			state.agent_direction = ((state.agent_direction - 1) % 4);
+			state.agent_direction = ((state.agent_direction-1) % 4);
+			if (state.agent_direction<0)
+				state.agent_direction +=4;
 			return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 		}
 	  else {
