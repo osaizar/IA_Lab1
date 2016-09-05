@@ -232,29 +232,41 @@
 				if (state.agent_y_position % 2 == 0 ){
 					System.out.println("true");
 					additionalRow = true;
-					// evenRow = true;
-				}else System.out.println("false");
+				}
+				else{
+					System.out.println("false");
+					additionalRow = false;
+					homeCheckpoint = true;
+				}
 
 				state.agent_last_action = state.ACTION_TURN_RIGHT;
 				state.agent_direction = ((state.agent_direction+1) % 4);
 				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
 			}
 
-			if (turning && state.agent_last_action == state.ACTION_MOVE_FORWARD) {
-				turning = false;
-				if (evenRow) {
-					evenRow = false;
-					state.agent_last_action = state.ACTION_TURN_LEFT;
-					state.agent_direction = ((state.agent_direction-1) % 4);
-			    if (state.agent_direction<0)
-			    	state.agent_direction +=4;
-					return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+			if(state.agent_direction != MyAgentState.WEST && state.agent_direction != MyAgentState.EAST){
+
+				if(state.agent_last_action != state.ACTION_MOVE_FORWARD){
+					evenRow = !evenRow;
+					System.out.println("Starting turning movement");
+					state.agent_last_action = state.ACTION_MOVE_FORWARD;
+		    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 				}
-				else {
-					evenRow = true;
-					state.agent_last_action = state.ACTION_TURN_RIGHT;
-					state.agent_direction = ((state.agent_direction + 1) % 4);
-					return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+				else{
+					if(!evenRow){
+						System.out.println("Ending turning movement -> Left");
+						state.agent_last_action = state.ACTION_TURN_LEFT;
+						state.agent_direction = ((state.agent_direction - 1) % 4);
+			    		if (state.agent_direction<0)
+			    			state.agent_direction +=4;
+						return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+					}
+					else{
+						System.out.println("Ending turning movement -> Right");
+						state.agent_last_action = state.ACTION_TURN_RIGHT;
+						state.agent_direction = ((state.agent_direction + 1) % 4);
+						return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+					}
 				}
 			}
 
@@ -267,11 +279,11 @@
 		  else if (home && additionalRow && !homeCheckpoint){
 					System.out.println("Got home, additional row pending");
 					homeCheckpoint = true;
-					state.agent_last_action = state.ACTION_TURN_RIGHT;
-					state.agent_direction = ((state.agent_direction + 1) % 4);
-					return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+					turning = true;
+					state.agent_last_action = state.ACTION_MOVE_FORWARD;
+		    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 		  }
-		  else if (home && !homeCheckpoint) {
+		  else if (home && homeCheckpoint) {
 		    		System.out.println("HOME -> Shuting down");
 		    		state.agent_last_action = state.ACTION_NONE;
 		    		return NoOpAction.NO_OP;
@@ -279,8 +291,16 @@
 		  else if (bump) {
 				turning = true;
 				System.out.println("BUMP! -> entering turning mode");
-				if (evenRow) { //test
-					System.out.println("Turning mode -> evenRow (left)"); //debug
+				if(homeCheckpoint && additionalRow){
+					System.out.println("Returning home -> 180");
+					state.agent_last_action = state.ACTION_TURN_LEFT;
+					state.agent_direction = ((state.agent_direction-1) % 4);
+			    	if (state.agent_direction<0)
+			    		state.agent_direction +=4;
+				    return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+				}
+				else if (evenRow) {
+					System.out.println("Turning mode -> evenRow (left)");
 					state.agent_last_action = state.ACTION_TURN_LEFT;
 					state.agent_direction = ((state.agent_direction-1) % 4);
 			    	if (state.agent_direction<0)
@@ -288,23 +308,12 @@
 				    return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 				}
 				else {
-					System.out.println("Turning mode -> unevenRow (right)"); //debug
+					System.out.println("Turning mode -> unevenRow (right)");
 		    		state.agent_last_action = state.ACTION_TURN_RIGHT;
 		    		state.agent_direction = ((state.agent_direction + 1) % 4);
 			    	return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
 				}
 		  }
-		   else if (homeCheckpoint && state.agent_last_action == state.ACTION_TURN_LEFT) {
-		   		// To complete the final 180 degrees turning
-				System.out.println("additionalRow -> false"); //debug
-				homeCheckpoint = false;
-				additionalRow = false;
-				state.agent_last_action = state.ACTION_TURN_LEFT;
-				state.agent_direction = ((state.agent_direction-1) % 4);
-				if (state.agent_direction<0)
-					state.agent_direction +=4;
-				return LIUVacuumEnvironment.ACTION_TURN_LEFT;
-			}
 		  else {
 				state.agent_last_action = state.ACTION_MOVE_FORWARD;
 		    	return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
