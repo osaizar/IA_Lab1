@@ -1,4 +1,4 @@
-	package tddc17;
+package tddc17;
 
 
 	import aima.core.environment.liuvacuum.*;
@@ -190,80 +190,84 @@
 
 		    state.printWorldDebug();
 
-		    // First of all, let's direct the vacuum cleaner to the bottom right corner
-	    	if (!bottomRight) {
-
-	    		if (state.agent_direction != MyAgentState.EAST && !rightWall){
-	    			state.agent_last_action = state.ACTION_TURN_RIGHT;
-	    			state.agent_direction = ((state.agent_direction+1) % 4);
-	    			return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-	    		}
-
-	    		if (!bump) {
-	    			state.agent_last_action = state.ACTION_MOVE_FORWARD;
-	    			return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-	    		}else {
-	    			if (!rightWall) {
-								// The cleaner has found the right wall, now should go to the bottom
-	    					rightWall = true;
-	        			state.agent_last_action = state.ACTION_TURN_RIGHT;
-	        			state.agent_direction = ((state.agent_direction+1) % 4);
-	    				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-	    			}else {
-	    				bottomRight = true;
-	    			}
-	    		}
-	    	}
 
 	    	// v1.0:
-			// Once we are on the bottom right corner, the cleaner runs
-			// by row or column by column.
+			// Once we are on the bottom right corner, the cleaner runs row by row
 			// Conditions: No obstacles
 
-			/// First we face west
+			// First of all, let's direct the vacuum cleaner to the bottom right corner
+			if (!bottomRight) {
+
+				if (state.agent_direction != MyAgentState.EAST && !rightWall) {
+					state.agent_last_action = state.ACTION_TURN_RIGHT;
+					state.agent_direction = ((state.agent_direction+1) % 4);
+					return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+				}
+
+				if (!bump) {
+					state.agent_last_action = state.ACTION_MOVE_FORWARD;
+					return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
+				}
+				else {
+					if (!rightWall) {
+						// The cleaner has found the right wall, now should go to the bottom
+						rightWall = true;
+						state.agent_last_action = state.ACTION_TURN_RIGHT;
+						state.agent_direction = ((state.agent_direction+1) % 4);
+						return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+					}
+					else {
+						bottomRight = true;
+					}
+				}
+			}
+
+			/// Then we face west
 			if (state.agent_direction != MyAgentState.WEST && rightWall) {
+			    // Don't take the rightWall variable name too seriously, it's just a reutilized one. We only want to check
+                // that the program only enters here once
 				rightWall = false;
-				System.out.println("Checking for additionalRow...");
-				if (state.agent_y_position % 2 == 0 ){
+				System.out.println("Checking for additionalRow... ");
+				if (state.agent_y_position % 2 == 0 ) {
 					System.out.println("true");
 					additionalRow = true;
 				}
-				else{
+				else {
 					System.out.println("false");
 					additionalRow = false;
 					homeCheckpoint = true;
 				}
 
 				state.agent_last_action = state.ACTION_TURN_RIGHT;
-				state.agent_direction = ((state.agent_direction+1) % 4);
+				state.agent_direction = ((state.agent_direction + 1) % 4);
 				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
 			}
 
-			if(state.agent_direction != MyAgentState.WEST && state.agent_direction != MyAgentState.EAST){
+			if (state.agent_direction != MyAgentState.WEST && state.agent_direction != MyAgentState.EAST) {
 
-				if(additionalRow && homeCheckpoint){ //this is optional, the code would work without it but we avoid a "bump"
+				if (additionalRow && homeCheckpoint) {  // This is optional, the code would work without it but we avoid a "bump"
 					state.agent_last_action = state.ACTION_TURN_LEFT;
-					state.agent_direction = ((state.agent_direction - 1) % 4);
-			    	if (state.agent_direction<0)
-			    		state.agent_direction +=4;
+					state.agent_direction = state.agent_direction - 1;
+			    	if (state.agent_direction < 0)
+			    		state.agent_direction += 4;
 					return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 				}
-				else if(state.agent_last_action != state.ACTION_MOVE_FORWARD){
-					evenRow = !evenRow; 
+				else if (state.agent_last_action != state.ACTION_MOVE_FORWARD) {
+					evenRow = !evenRow;
 					System.out.println("Starting turning movement");
 					state.agent_last_action = state.ACTION_MOVE_FORWARD;
 		    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 				}
-				else{
-					if(!evenRow){
+				else {
+					if (!evenRow) {
 						System.out.println("Ending turning movement -> Left");
 						state.agent_last_action = state.ACTION_TURN_LEFT;
-						state.agent_direction = ((state.agent_direction - 1) % 4);
-			    		if (state.agent_direction<0)
-			    			state.agent_direction +=4;
+						state.agent_direction = state.agent_direction - 1;
+			    		if (state.agent_direction < 0)
+			    			state.agent_direction += 4;
 						return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 					}
-					else{
+					else {
 						System.out.println("Ending turning movement -> Right");
 						state.agent_last_action = state.ACTION_TURN_RIGHT;
 						state.agent_direction = ((state.agent_direction + 1) % 4);
@@ -272,39 +276,39 @@
 				}
 			}
 
-		  // Next action selection based on the percept value
-		  if (dirt) {
+		    // Next action selection based on the percept value
+		    if (dirt) {
 		    	System.out.println("DIRT -> choosing SUCK action!");
 		    	state.agent_last_action = state.ACTION_SUCK;
 		    	return LIUVacuumEnvironment.ACTION_SUCK;
-		  }
-		  else if (home && additionalRow && !homeCheckpoint){
-					System.out.println("Got home, additional row pending");
-					homeCheckpoint = true;
-					state.agent_last_action = state.ACTION_MOVE_FORWARD;
-		    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-		  }
-		  else if (home && homeCheckpoint) {
-		    		System.out.println("HOME -> Shuting down");
-		    		state.agent_last_action = state.ACTION_NONE;
-		    		return NoOpAction.NO_OP;
-		  }
-		  else if (bump) {
+		    }
+		    else if (home && additionalRow && !homeCheckpoint) {
+                System.out.println("Got home, additional row pending");
+				homeCheckpoint = true;
+				state.agent_last_action = state.ACTION_MOVE_FORWARD;
+		    	return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
+		    }
+		    else if (home && homeCheckpoint) {
+		    	System.out.println("HOME -> Shuting down");
+		    	state.agent_last_action = state.ACTION_NONE;
+		    	return NoOpAction.NO_OP;
+		    }
+		    else if (bump) {
 				System.out.println("BUMP! -> entering turning mode");
-				if(homeCheckpoint && additionalRow){
+				if (homeCheckpoint && additionalRow) {
 					System.out.println("Returning home -> 180º turn");
 					state.agent_last_action = state.ACTION_TURN_LEFT;
-					state.agent_direction = ((state.agent_direction-1) % 4);
-			    	if (state.agent_direction<0)
-			    		state.agent_direction +=4;
+					state.agent_direction = state.agent_direction - 1;
+			    	if (state.agent_direction < 0)
+			    		state.agent_direction += 4;
 				    return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 				}
 				else if (evenRow) {
 					System.out.println("Turning mode -> evenRow (left)");
 					state.agent_last_action = state.ACTION_TURN_LEFT;
-					state.agent_direction = ((state.agent_direction-1) % 4);
-			    	if (state.agent_direction<0)
-			    		state.agent_direction +=4;
+					state.agent_direction = state.agent_direction - 1;
+			    	if (state.agent_direction < 0)
+			    		state.agent_direction += 4;
 				    return LIUVacuumEnvironment.ACTION_TURN_LEFT;
 				}
 				else {
@@ -313,13 +317,13 @@
 		    		state.agent_direction = ((state.agent_direction + 1) % 4);
 			    	return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
 				}
-		  }
-		  else {
+		    }
+		    else {
 				state.agent_last_action = state.ACTION_MOVE_FORWARD;
 		    	return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-		    }
-		  }
-		}
+            }
+        }
+    }
 
 	public class MyVacuumAgent extends AbstractAgent {
 	    public MyVacuumAgent() {
