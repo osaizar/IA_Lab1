@@ -119,7 +119,7 @@
 				next = world[agent_x_position-1][agent_y_position];
 			if(agent_direction == MyAgentState.SOUTH)
 				next = world[agent_x_position][agent_y_position+1];
-			
+
 			if(next == UNKNOWN)
 				return true;
 			else
@@ -257,9 +257,12 @@
 		  		}
 		  	}
 		  	else if(backtracking){
-		    	if(state.getUnknownWorld() != -1)
+		    	if(state.getUnknownWorld() != -1){
+		    		System.out.println("backtrack ended");
 		    		backtracking = false;
-		    	else{
+		    	}
+		    	else{	
+		    			System.out.println("backtracking...");
 		    			int action = (Integer) movementHistory.pop();
 		    			if(action == state.ACTION_TURN_LEFT){
 		    				state.doAction(state.ACTION_TURN_RIGHT);
@@ -297,9 +300,9 @@
 		    	state.doAction(state.ACTION_MOVE_FORWARD);
 		    	return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 		    }
-		    movementHistory.push(state.ACTION_MOVE_FORWARD);
-		    state.doAction(state.ACTION_MOVE_FORWARD);
-		    return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;	
+		    //Why does this run?
+		    state.doAction(state.ACTION_SUCK);
+		    return LIUVacuumEnvironment.ACTION_SUCK;	
 		  }
 		}
 
