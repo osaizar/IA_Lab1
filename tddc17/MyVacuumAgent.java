@@ -106,7 +106,6 @@
 		private boolean bottomRight = false;
 		private boolean rightWall = false;
 		private boolean additionalRow = false;
-		private boolean turning = false;
 		private boolean evenRow = false;
 		private boolean homeCheckpoint = false;
 
@@ -221,10 +220,6 @@
 			// by row or column by column.
 			// Conditions: No obstacles
 
-			// FIXME
-			// When facing the first wall of the route, the cleaner does NOT
-			// move forward after the first turn to the right (as it should)
-
 			/// First we face west
 			if (state.agent_direction != MyAgentState.WEST && rightWall) {
 				rightWall = false;
@@ -246,7 +241,14 @@
 
 			if(state.agent_direction != MyAgentState.WEST && state.agent_direction != MyAgentState.EAST){
 
-				if(state.agent_last_action != state.ACTION_MOVE_FORWARD){
+				if(additionalRow && homeCheckpoint){ //this is optional, the code would work without it but we avoid a "bump"
+					state.agent_last_action = state.ACTION_TURN_LEFT;
+					state.agent_direction = ((state.agent_direction - 1) % 4);
+			    	if (state.agent_direction<0)
+			    		state.agent_direction +=4;
+					return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+				}
+				else if(state.agent_last_action != state.ACTION_MOVE_FORWARD){
 					evenRow = !evenRow;
 					System.out.println("Starting turning movement");
 					state.agent_last_action = state.ACTION_MOVE_FORWARD;
@@ -270,7 +272,7 @@
 				}
 			}
 
-		    // Next action selection based on the percept value
+		  // Next action selection based on the percept value
 		  if (dirt) {
 		    	System.out.println("DIRT -> choosing SUCK action!");
 		    	state.agent_last_action = state.ACTION_SUCK;
@@ -279,7 +281,6 @@
 		  else if (home && additionalRow && !homeCheckpoint){
 					System.out.println("Got home, additional row pending");
 					homeCheckpoint = true;
-					turning = true;
 					state.agent_last_action = state.ACTION_MOVE_FORWARD;
 		    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 		  }
@@ -289,10 +290,9 @@
 		    		return NoOpAction.NO_OP;
 		  }
 		  else if (bump) {
-				turning = true;
 				System.out.println("BUMP! -> entering turning mode");
 				if(homeCheckpoint && additionalRow){
-					System.out.println("Returning home -> 180");
+					System.out.println("Returning home -> 180º turn");
 					state.agent_last_action = state.ACTION_TURN_LEFT;
 					state.agent_direction = ((state.agent_direction-1) % 4);
 			    	if (state.agent_direction<0)
