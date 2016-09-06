@@ -328,5 +328,5 @@ package tddc17;
 	public class MyVacuumAgent extends AbstractAgent {
 	    public MyVacuumAgent() {
 	    	super(new MyAgentProgram());
-		}
-	
+  }
+}
