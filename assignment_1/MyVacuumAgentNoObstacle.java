@@ -1,4 +1,4 @@
-	package tddc17;
+package tddc17;
 
 
 	import aima.core.environment.liuvacuum.*;
@@ -8,8 +8,6 @@
 	import aima.core.agent.impl.*;
 
 	import java.util.Random;
-	import java.util.Stack;
-  import java.util.EmptyStackException;
 
 	class MyAgentState
 	{
@@ -94,54 +92,6 @@
 				System.out.println("");
 			}
 		}
-
-		//Our Functions
-		//Returns a direction near the agent where there's a unknown block
-		public int getUnknownWorld(){
-			if(world[agent_x_position][agent_y_position-1] == UNKNOWN)
-				return MyAgentState.NORTH;
-			if(world[agent_x_position+1][agent_y_position] == UNKNOWN)
-				return MyAgentState.EAST;
-			if(world[agent_x_position][agent_y_position+1] == UNKNOWN)
-				return MyAgentState.SOUTH;
-			if(world[agent_x_position-1][agent_y_position] == UNKNOWN)
-				return MyAgentState.WEST;
-
-			return -1; //Error
-		}
-
-		//Checks weather the next step of the agent is viable or not (known or not)
-		public boolean checkNextStep(){
-			int next = -1;
-
-			if(agent_direction == MyAgentState.NORTH)
-				next = world[agent_x_position][agent_y_position-1];
-			if(agent_direction == MyAgentState.EAST)
-				next = world[agent_x_position+1][agent_y_position];
-			if(agent_direction == MyAgentState.WEST)
-				next = world[agent_x_position-1][agent_y_position];
-			if(agent_direction == MyAgentState.SOUTH)
-				next = world[agent_x_position][agent_y_position+1];
-
-			if(next == UNKNOWN)
-				return true;
-			else
-				return false;
-		}
-
-		//Just a function to make turning right or left easier
-		public void doAction(int action){
-			agent_last_action = action;
-
-			if(action == ACTION_TURN_RIGHT){
-				agent_direction = ((agent_direction+1) % 4);
-			}
-			else if(action == ACTION_TURN_LEFT){
-				agent_direction = ((agent_direction-1) % 4);
-			    if (agent_direction<0)
-			    	agent_direction +=4;
-			}
-		}
 	}
 
 	class MyAgentProgram implements AgentProgram {
@@ -150,13 +100,14 @@
 		private Random random_generator = new Random();
 
 		// Here you can define your variables!
-		public int iterationCounter = 10;  // Original value: 10
+		public int iterationCounter = 1000;  // Original value: 10
 		public MyAgentState state = new MyAgentState();
-
 		// Added variables
-		private Stack movementHistory = new Stack();
-		private boolean backtracking = false; //if true, the agent enters backtracking mode
-		private int turnsLeft = -1; //if positive, the agent will make the turns that are indicated.
+		private boolean bottomRight = false;
+		private boolean rightWall = false;
+		private boolean additionalRow = false;
+		private boolean evenRow = false;
+		private boolean homeCheckpoint = false;
 
 		// moves the Agent to a random start position
 		// uses percepts to update the Agent position - only the position, other percepts are ignored
@@ -203,7 +154,7 @@
 	    	System.out.println("y=" + state.agent_y_position);
 	    	System.out.println("dir=" + state.agent_direction);
 
-		    //iterationCounter--; // infinite iterations
+		    //iterationCounter--;
 
 		    if (iterationCounter==0)
 		    	return NoOpAction.NO_OP;
@@ -240,87 +191,142 @@
 		    state.printWorldDebug();
 
 
-		   // v2.0:
-		   // Conditions: Obstacles
-			 /*
-			 Idea:
-			 The agent will walk on a straight line untill it bumps or untill it is
-			 going to step in a known square. Then the agent will change direction to
-			 a near unknown block. If there is not any unknown position nearby, The
-			 agent will undo its movements untill it finds one.
+	    	// v1.0:
+			// Once we are on the bottom right corner, the cleaner runs row by row
+			// Conditions: No obstacles
 
-			 With this algorithm we know that the agent will go to every possible
-			 square on the map and it will end on his start possition. (Home or not)
+			// First of all, let's direct the vacuum cleaner to the bottom right corner
+			if (!bottomRight) {
 
-			 Currently, the backtracking is not working very well.
-				*/
+				if (state.agent_direction != MyAgentState.EAST && !rightWall) {
+					state.agent_last_action = state.ACTION_TURN_RIGHT;
+					state.agent_direction = ((state.agent_direction+1) % 4);
+					return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+				}
 
+				if (!bump) {
+					state.agent_last_action = state.ACTION_MOVE_FORWARD;
+					return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
+				}
+				else {
+					if (!rightWall) {
+						// The cleaner has found the right wall, now should go to the bottom
+						rightWall = true;
+						state.agent_last_action = state.ACTION_TURN_RIGHT;
+						state.agent_direction = ((state.agent_direction+1) % 4);
+						return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+					}
+					else {
+						bottomRight = true;
+					}
+				}
+			}
+
+			/// Then we face west
+			if (state.agent_direction != MyAgentState.WEST && rightWall) {
+			    // Don't take the rightWall variable name too seriously, it's just a reutilized one. We only want to check
+                // that the program only enters here once
+				rightWall = false;
+				System.out.println("Checking for additionalRow... ");
+				if (state.agent_y_position % 2 == 0 ) {
+					System.out.println("true");
+					additionalRow = true;
+				}
+				else {
+					System.out.println("false");
+					additionalRow = false;
+					homeCheckpoint = true;
+				}
+
+				state.agent_last_action = state.ACTION_TURN_RIGHT;
+				state.agent_direction = ((state.agent_direction + 1) % 4);
+				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+			}
+
+			if (state.agent_direction != MyAgentState.WEST && state.agent_direction != MyAgentState.EAST) {
+
+				if (additionalRow && homeCheckpoint) {  // This is optional, the code would work without it but we avoid a "bump"
+					state.agent_last_action = state.ACTION_TURN_LEFT;
+					state.agent_direction = state.agent_direction - 1;
+			    	if (state.agent_direction < 0)
+			    		state.agent_direction += 4;
+					return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+				}
+				else if (state.agent_last_action != state.ACTION_MOVE_FORWARD) {
+					evenRow = !evenRow;
+					System.out.println("Starting turning movement");
+					state.agent_last_action = state.ACTION_MOVE_FORWARD;
+		    		return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
+				}
+				else {
+					if (!evenRow) {
+						System.out.println("Ending turning movement -> Left");
+						state.agent_last_action = state.ACTION_TURN_LEFT;
+						state.agent_direction = state.agent_direction - 1;
+			    		if (state.agent_direction < 0)
+			    			state.agent_direction += 4;
+						return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+					}
+					else {
+						System.out.println("Ending turning movement -> Right");
+						state.agent_last_action = state.ACTION_TURN_RIGHT;
+						state.agent_direction = ((state.agent_direction + 1) % 4);
+						return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+					}
+				}
+			}
+
+		    // Next action selection based on the percept value
 		    if (dirt) {
 		    	System.out.println("DIRT -> choosing SUCK action!");
 		    	state.agent_last_action = state.ACTION_SUCK;
 		    	return LIUVacuumEnvironment.ACTION_SUCK;
-		  	}
-		  	else if(turnsLeft > 0){
-		  		turnsLeft--;
-		  		state.doAction(state.ACTION_TURN_RIGHT); //all the turns are to the right. (Not a very efficient way)
-		  		if(!backtracking)movementHistory.push(state.ACTION_TURN_RIGHT);
-		  		return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-		  	}
-		  	else if(backtracking){
-		    	if(state.getUnknownWorld() != -1){ //if we have a unknown direction to go, backtracking has ended
-		    		System.out.println("backtrack ended");
-		    		backtracking = false;
-		    	}
-		    	else{
-		    			System.out.println("backtracking...");
-							int action;
-							try{
-								action = (Integer) movementHistory.pop();
-							}catch(EmptyStackException e){
-                System.out.println("Stack ended, all the positions checked.");
-                return NoOpAction.NO_OP;
-              }
-
-		    			if(action == state.ACTION_TURN_LEFT){
-		    				state.doAction(state.ACTION_TURN_RIGHT);
-		    				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-		    			}
-		    			else if(action == state.ACTION_TURN_RIGHT){
-		    				state.doAction(state.ACTION_TURN_LEFT);
-		    				return LIUVacuumEnvironment.ACTION_TURN_LEFT;
-		    			}
-		    			state.doAction(state.ACTION_MOVE_FORWARD);
-		    			return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-		    		}
-		    	}
-		  	else if(bump || !state.checkNextStep()){ //if this is true, we need a path change
-		  		System.out.println("Path change needed bump["+bump+"] next step ["+state.checkNextStep()+"]");
-		    	if(state.getUnknownWorld() != -1){ //if there is a unknown direction to go, the agent will go there.
-		    		System.out.println("Finding new Path...");
-		    		int path = state.getUnknownWorld();
-		    		turnsLeft = path - state.agent_direction;
-		    		if(turnsLeft < 0)
-		    			turnsLeft = 4 + turnsLeft;
-		    		System.out.println("Path: "+path+" turnsLeft: "+turnsLeft+" (rigth)");
-		    	}else{ //if there's not, we need to backtrack
-		    		System.out.println("Starting backtrack...");
-		    		backtracking = true;
-		    		turnsLeft = 2; //180 turn to go back
-		    	}
 		    }
-		  	else{
-		    	movementHistory.push(state.ACTION_MOVE_FORWARD);
-		    	state.doAction(state.ACTION_MOVE_FORWARD);
+		    else if (home && additionalRow && !homeCheckpoint) {
+                System.out.println("Got home, additional row pending");
+				homeCheckpoint = true;
+				state.agent_last_action = state.ACTION_MOVE_FORWARD;
 		    	return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 		    }
-
-		    state.doAction(state.ACTION_SUCK); //do nothing. "NoOpAction.NO_OP" stops the agent
-		    return LIUVacuumEnvironment.ACTION_SUCK;
-		  }
-		}
+		    else if (home && homeCheckpoint) {
+		    	System.out.println("HOME -> Shuting down");
+		    	state.agent_last_action = state.ACTION_NONE;
+		    	return NoOpAction.NO_OP;
+		    }
+		    else if (bump) {
+				System.out.println("BUMP! -> entering turning mode");
+				if (homeCheckpoint && additionalRow) {
+					System.out.println("Returning home -> 180º turn");
+					state.agent_last_action = state.ACTION_TURN_LEFT;
+					state.agent_direction = state.agent_direction - 1;
+			    	if (state.agent_direction < 0)
+			    		state.agent_direction += 4;
+				    return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+				}
+				else if (evenRow) {
+					System.out.println("Turning mode -> evenRow (left)");
+					state.agent_last_action = state.ACTION_TURN_LEFT;
+					state.agent_direction = state.agent_direction - 1;
+			    	if (state.agent_direction < 0)
+			    		state.agent_direction += 4;
+				    return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+				}
+				else {
+					System.out.println("Turning mode -> unevenRow (right)");
+		    		state.agent_last_action = state.ACTION_TURN_RIGHT;
+		    		state.agent_direction = ((state.agent_direction + 1) % 4);
+			    	return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+				}
+		    }
+		    else {
+				state.agent_last_action = state.ACTION_MOVE_FORWARD;
+		    	return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
+            }
+        }
+    }
 
 	public class MyVacuumAgent extends AbstractAgent {
 	    public MyVacuumAgent() {
 	    	super(new MyAgentProgram());
-		}
-	}
+  }
+}

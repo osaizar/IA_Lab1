@@ -9,6 +9,7 @@
 
 	import java.util.Random;
 	import java.util.Stack;
+  import java.util.EmptyStackException;
 
 	class MyAgentState
 	{
@@ -272,7 +273,14 @@
 		    	}
 		    	else{
 		    			System.out.println("backtracking...");
-		    			int action = (Integer) movementHistory.pop();
+							int action;
+							try{
+								action = (Integer) movementHistory.pop();
+							}catch(EmptyStackException e){
+                System.out.println("Stack ended, all the positions checked.");
+                return NoOpAction.NO_OP;
+              }
+
 		    			if(action == state.ACTION_TURN_LEFT){
 		    				state.doAction(state.ACTION_TURN_RIGHT);
 		    				return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
