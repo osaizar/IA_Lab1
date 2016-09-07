@@ -244,13 +244,13 @@
 		   // Conditions: Obstacles
 			 /*
 			 Idea:
-			 The agent will walk on a straight line untill it bumps or untill it is
+			 The agent will walk on a straight line until it bumps or until it is
 			 going to step in a known square. Then the agent will change direction to
 			 a near unknown block. If there is not any unknown position nearby, The
-			 agent will undo its movements untill it finds one.
+			 agent will undo its movements until it finds one.
 
 			 With this algorithm we know that the agent will go to every possible
-			 square on the map and it will end on his start possition. (Home or not)
+			 square on the map and it will end on his start position. (Home or not)
 
 			 Currently, the backtracking is not working very well.
 				*/
