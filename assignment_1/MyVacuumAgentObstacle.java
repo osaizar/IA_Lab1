@@ -242,7 +242,7 @@
 
 		   // v2.0:
 		   // Conditions: Obstacles
-			 /*
+			/*
 			 Idea:
 			 The agent will walk on a straight line until it bumps or until it is
 			 going to step in a known square. Then the agent will change direction to
@@ -253,9 +253,9 @@
 			 square on the map and it will end on his start position. (Home or not)
 
 			 Currently, the backtracking is not working very well.
-				*/
+			*/
 
-		    if (dirt) {
+		    if (dirt) { //If we find dirt, suck it.
 		    	System.out.println("DIRT -> choosing SUCK action!");
 		    	state.agent_last_action = state.ACTION_SUCK;
 		    	return LIUVacuumEnvironment.ACTION_SUCK;
@@ -273,13 +273,13 @@
 		    	}
 		    	else{
 		    			System.out.println("backtracking...");
-							int action;
-							try{
-								action = (Integer) movementHistory.pop();
-							}catch(EmptyStackException e){
-                System.out.println("Stack ended, all the positions checked.");
-                return NoOpAction.NO_OP;
-              }
+						int action;
+						try{
+							action = (Integer) movementHistory.pop();
+						}catch(EmptyStackException e){
+                			System.out.println("Stack ended, all the positions checked.");
+                			return NoOpAction.NO_OP;
+            			}
 
 		    			if(action == state.ACTION_TURN_LEFT){
 		    				state.doAction(state.ACTION_TURN_RIGHT);
@@ -288,9 +288,10 @@
 		    			else if(action == state.ACTION_TURN_RIGHT){
 		    				state.doAction(state.ACTION_TURN_LEFT);
 		    				return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+		    			}else if(action == state.ACTION_MOVE_FORWARD){
+		    				state.doAction(state.ACTION_MOVE_FORWARD);
+		    				return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 		    			}
-		    			state.doAction(state.ACTION_MOVE_FORWARD);
-		    			return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
 		    		}
 		    	}
 		  	else if(bump || !state.checkNextStep()){ //if this is true, we need a path change
